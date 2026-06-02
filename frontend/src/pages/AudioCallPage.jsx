@@ -9,6 +9,7 @@ import {
   StreamVideoClient,
   StreamCall,
   CallControls,
+  SpeakerLayout,
   StreamTheme,
   CallingState,
   useCallStateHooks,
@@ -36,35 +37,42 @@ const AudioCallPage = () => {
   });
 
   useEffect(() => {
+    let videoClient;
+    let callInstance;
+
     const initCall = async () => {
       if (!tokenData?.token || !authUser || !callId) return;
 
       try {
+        console.log("Initializing Audio Call...");
+
         const user = {
           id: authUser._id,
           name: authUser.fullName,
           image: authUser.profilePic,
         };
 
-        const videoClient = new StreamVideoClient({
+        videoClient = new StreamVideoClient({
           apiKey: STREAM_API_KEY,
           user,
           token: tokenData.token,
         });
 
-        const callInstance = videoClient.call("default", callId);
+        callInstance = videoClient.call("default", callId);
 
-        await callInstance.join({
-          create: true,
-          audio: true,
-          video: false,
-        });
+        await callInstance.join({ create: true });
+
+        // Audio-only configuration
+        await callInstance.camera.disable();
+        await callInstance.microphone.enable();
+
+        console.log("Joined audio call successfully");
 
         setClient(videoClient);
         setCall(callInstance);
       } catch (error) {
-        console.error(error);
-        toast.error("Could not join audio call.");
+        console.error("Error joining audio call:", error);
+        toast.error("Could not join the audio call.");
       } finally {
         setIsConnecting(false);
       }
@@ -73,33 +81,48 @@ const AudioCallPage = () => {
     initCall();
 
     return () => {
-      if (call) call.leave();
-      if (client) client.disconnectUser();
+      if (callInstance) callInstance.leave();
+      if (videoClient) videoClient.disconnectUser();
     };
   }, [tokenData, authUser, callId]);
 
-  if (isLoading || isConnecting) return <PageLoader />;
+  if (isLoading || isConnecting) {
+    return <PageLoader />;
+  }
 
   return (
-    <div className="h-screen flex items-center justify-center bg-base-100">
-      {client && call ? (
-        <StreamVideo client={client}>
-          <StreamCall call={call}>
-            <AudioCallContent />
-          </StreamCall>
-        </StreamVideo>
-      ) : (
-        <div>Unable to connect.</div>
-      )}
+    <div className="h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden bg-base-100">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[50%] rounded-full bg-secondary/20 blur-[120px] pointer-events-none" />
+
+      {/* Audio Call Container */}
+      <div className="w-full max-w-6xl h-full bg-base-200/50 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden relative z-10 flex flex-col justify-center text-white">
+        <div className="flex-1 w-full relative">
+          {client && call ? (
+            <StreamVideo client={client}>
+              <StreamCall call={call}>
+                <AudioCallContent />
+              </StreamCall>
+            </StreamVideo>
+          ) : (
+            <div className="flex items-center justify-center h-full text-white/50">
+              <p>
+                Could not initialize audio call. Please refresh and try again.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
 const AudioCallContent = () => {
-  const navigate = useNavigate();
-
   const { useCallCallingState } = useCallStateHooks();
   const callingState = useCallCallingState();
+
+  const navigate = useNavigate();
 
   if (callingState === CallingState.LEFT) {
     navigate("/");
@@ -108,21 +131,13 @@ const AudioCallContent = () => {
 
   return (
     <StreamTheme>
-      <div className="h-screen flex flex-col items-center justify-center gap-8">
-        <div className="text-center">
-          <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center text-4xl font-bold text-white mx-auto">
-            🎧
-          </div>
-
-          <h1 className="text-2xl font-bold mt-6">
-            Audio Call
-          </h1>
-
-          <p className="text-muted-foreground mt-2">
-            Connected...
-          </p>
+      <div className="h-full flex flex-col">
+        {/* Shows participants, active speaker, and screen sharing */}
+        <div className="flex-1">
+          <SpeakerLayout />
         </div>
 
+        {/* Audio Controls */}
         <CallControls />
       </div>
     </StreamTheme>
