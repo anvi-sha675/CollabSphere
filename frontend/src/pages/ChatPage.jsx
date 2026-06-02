@@ -4,6 +4,7 @@ import useAuthUser from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
 import { getAvatarUrl } from "../lib/utils";
 import { getUserFriends } from "../lib/api";
+import { Phone } from "lucide-react";
 
 import {
   Channel,
@@ -92,6 +93,18 @@ const ChatPage = () => {
     }
   };
 
+  const handleAudioCall = () => {
+    if (!channel) return;
+
+    const callUrl = `${window.location.origin}/audio-call/${channel.id}`;
+
+    channel.sendMessage({
+      text: `I've started an audio call. Join me here: \n\n${callUrl}`,
+    });
+
+    toast.success("Audio call link sent successfully!");
+  };
+
   if (loading || !chatClient || !channel) return <ChatLoader />;
 
   const targetMember = Object.values(channel.state.members).find(
@@ -110,7 +123,7 @@ const ChatPage = () => {
                 {/* Custom Chat Header matching Lovable */}
                 <div
                   className="h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center px-4 gap-3 shrink-0 cursor-pointer hover:bg-muted/10 transition-colors"
-                  onClick={() => setShowProfile(!showProfile)}
+                  // onClick={() => setShowProfile(!showProfile)}
                 >
                   <button
                     onClick={(e) => {
@@ -150,7 +163,25 @@ const ChatPage = () => {
                     <p className="text-xs text-muted-foreground">Online</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors">
+                    {/* Audio Call */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAudioCall();
+                      }}
+                      className="p-2.5 rounded-lg hover:bg-secondary transition-colors"
+                    >
+                      <Phone size={16} className="text-muted-foreground" />
+                    </button>
+
+                    {/* Profile */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowProfile(!showProfile);
+                      }}
+                      className="p-2.5 rounded-lg hover:bg-secondary transition-colors"
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
@@ -163,11 +194,17 @@ const ChatPage = () => {
                         strokeLinejoin="round"
                         className="text-muted-foreground"
                       >
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        <path d="M20 21a8 8 0 0 0-16 0" />
+                        <circle cx="12" cy="7" r="4" />
                       </svg>
                     </button>
+
+                    {/* Video Call */}
                     <button
-                      onClick={handleVideoCall}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleVideoCall();
+                      }}
                       className="p-2.5 rounded-lg gradient-bg hover:opacity-90 transition-opacity shadow-glow"
                     >
                       <svg
