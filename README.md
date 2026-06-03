@@ -17,7 +17,6 @@
 - Advantages
 - Future Scope
 - License
-
 ---
 
 # 📌 Overview
